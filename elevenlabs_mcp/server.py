@@ -752,15 +752,52 @@ def play_audio(input_file_path: str) -> TextContent:
     return TextContent(type="text", text=f"Successfully played audio file: {file_path}")
 
 
-from fastapi import FastAPI
-from fastmcp.transport.sse import setup_sse_transport
+from fastapi import FastAPI, Request
+from sse_starlette.sse import EventSourceResponse
+import json
+import asyncio
+from typing import Any, Dict, AsyncGenerator
 
 app = FastAPI()
-setup_sse_transport(app, mcp)
+
+# Helper functie om MCP-reacties om te zetten naar SSE-events
+def serialize_response(response: Any) -> str:
+    if hasattr(response, 'model_dump_json'):
+        return response.model_dump_json()
+    elif hasattr(response, 'dict'):
+        return json.dumps(response.dict())
+    else:
+        return json.dumps(response)
+
+# SSE-eindpunt voor MCP-communicatie
+@app.get("/mcp/stream")
+async def mcp_stream(request: Request):
+    async def event_generator() -> AsyncGenerator[Dict[str, Any], None]:
+        yield {"event": "connected", "data": json.dumps({"status": "connected"})}
+        while True:
+            if await request.is_disconnected():
+                break
+            await asyncio.sleep(10)
+            yield {"event": "ping", "data": json.dumps({"status": "alive"})}
+    return EventSourceResponse(event_generator())
+
+# API-eindpunt om tools aan te roepen
+@app.post("/mcp/invoke/{tool_name}")
+async def invoke_tool(tool_name: str, args: Dict[str, Any]):
+    try:
+        tool_result = await mcp.invoke_tool(tool_name, **args)
+        return {"status": "success", "result": serialize_response(tool_result)}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# Homepage
+@app.get("/")
+async def root():
+    return {"message": "ElevenLabs MCP Server is running", "tools": [tool.name for tool in mcp.tools]}
 
 def main():
     print("Starting MCP server")
-    mcp.run(transport="sse")
+    mcp.run(transport="http")
 
 if __name__ == "__main__":
     main()
