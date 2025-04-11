@@ -756,7 +756,7 @@ from fastapi import FastAPI
 
 # Voor FastAPI/Render deploy:
 app = FastAPI()
-mcp.mount_to(app)
+app.include_router(mcp.router)
 
 def main():
     print("Starting MCP server")
