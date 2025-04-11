@@ -752,7 +752,12 @@ def play_audio(input_file_path: str) -> TextContent:
     return TextContent(type="text", text=f"Successfully played audio file: {file_path}")
 
 
-from fastapi import FastAPI
+def main():
+    print("Starting MCP server")
+    mcp.run()
 
-app = FastAPI()
-mcp.attach_routes(app)
+if __name__ == "__main__":
+    main()
+
+# Voor FastAPI/Render deploy:
+app = mcp.app
