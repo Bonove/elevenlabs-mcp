@@ -753,7 +753,7 @@ def play_audio(input_file_path: str) -> TextContent:
 
 
 from fastapi import FastAPI
-from mcp.transport.sse import setup_sse_transport
+from fastmcp.transport.sse import setup_sse_transport
 
 app = FastAPI()
 setup_sse_transport(app, mcp)
