@@ -753,14 +753,14 @@ def play_audio(input_file_path: str) -> TextContent:
 
 
 from fastapi import FastAPI
+from mcp.transport.sse import setup_sse_transport
 
-# Voor FastAPI/Render deploy:
 app = FastAPI()
-app.include_router(mcp.router)
+setup_sse_transport(app, mcp)
 
 def main():
     print("Starting MCP server")
-    mcp.run()
+    mcp.run(transport="sse")
 
 if __name__ == "__main__":
     main()
